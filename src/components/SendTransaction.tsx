@@ -1,7 +1,9 @@
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { Keypair, SystemProgram, Transaction, TransactionMessage, TransactionSignature, VersionedTransaction } from '@solana/web3.js';
+import { Keypair, SystemProgram, Transaction, TransactionMessage, TransactionSignature, VersionedTransaction, TransactionInstruction, PublicKey } from '@solana/web3.js';
 import { FC, useCallback } from 'react';
 import { notify } from "../utils/notifications";
+
+const escrow = require('../../public/escrow.json')
 
 export const SendTransaction: FC = () => {
     const { connection } = useConnection();
@@ -26,8 +28,12 @@ export const SendTransaction: FC = () => {
                 }),
             ];
 
-            // Get the lates block hash to use on our transaction and confirmation
-            let latestBlockhash = await connection.getLatestBlockhash()
+            // Get the latest block hash to use on our transaction and confirmation
+            let latestBlockhash = await connection.getLatestBlockhash();
+
+            // Derive the program address from the JSON file
+            const [programId, space] = [new PublicKey(escrow.programId), escrow.space];
+            const [escrowAddress, nonce] = await findProgramAddress([Buffer.from('escrow')], programId);
 
             // Create a new TransactionMessage with version and compile it to legacy
             const messageLegacy = new TransactionMessage({
@@ -36,8 +42,8 @@ export const SendTransaction: FC = () => {
                 instructions,
             }).compileToLegacyMessage();
 
-            // Create a new VersionedTransacction which supports legacy and v0
-            const transation = new VersionedTransaction(messageLegacy)
+            // Create a new VersionedTransaction which supports legacy and v0
+            const transation = new VersionedTransaction(messageLegacy);
 
             // Send transaction and await for signature
             signature = await sendTransaction(transation, connection);
@@ -59,18 +65,23 @@ export const SendTransaction: FC = () => {
             <div className="relative group items-center">
                 <div className="m-1 absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-fuchsia-500 
                 rounded-lg blur opacity-20 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
-                    <button
-                        className="group w-60 m-2 btn animate-pulse bg-gradient-to-br from-indigo-500 to-fuchsia-500 hover:from-white hover:to-purple-300 text-black"
-                        onClick={onClick} disabled={!publicKey}
-                    >
-                        <div className="hidden group-disabled:block ">
+                <button
+                    className="group w-60 m-2 btn animate-pulse bg-gradient-to-br from-indigo-500 to-fuchsia-500 hover:from-white hover:to-purple-300 text-black"
+                    onClick={onClick} disabled={!publicKey}
+                >
+                    <div className="hidden group-disabled:block ">
                         Wallet not connected
-                        </div>
-                         <span className="block group-disabled:hidden" >
-                            Send Transaction
-                        </span>
-                    </button>
-             </div>
+                    </div>
+                    <span className="block group-disabled:hidden" >
+                        Send Transaction
+                    </span>
+                </button>
+            </div>
         </div>
     );
 };
+
+function findProgramAddress(arg0: Buffer[], programId: PublicKey): [any, any] | PromiseLike<[any, any]> {
+    throw new Error('Function not implemented.');
+}
+
